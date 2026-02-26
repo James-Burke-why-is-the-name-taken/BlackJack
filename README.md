@@ -7,3 +7,5 @@ After each match, player is given option to cash out, therefore ending the whole
 
 Non-main files would have a .h and .c variant, where the .h file declares functions and variables, but the .c file defines them.
 Then, the .h file is included in the main.c file, but the .c variant files would be linked when they're all compiled
+
+output file and game log file 
