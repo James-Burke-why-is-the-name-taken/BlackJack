@@ -10,6 +10,6 @@ Then, the .h file is included in the main.c file, but the .c variant files would
 
 output file and game log file 
 
-Zach does dick
+Zach logic of the deck: shuffle counting cards
 Jakob does art/output
 James does game logic
