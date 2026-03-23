@@ -1,0 +1,2 @@
+need to count cards and not give duplicate cards, needs to shuffle and remember the order. have an output that the 
+game logic can use, (array/structure), needs to have .c and .h varients so it can be used in main.c 
