@@ -1,6 +1,104 @@
+/*
 _______
 |A _  |
 | ( ) |
 |(_'_)|
 |  |  |
 |____V|
+*/
+/****************************************************************************
+
+File: cardArt.c
+
+Author: Jakob Flores
+
+Purpose: Print Cards onto the screen
+
+TODO: Moba doesn't like function calls because of pointer stuff
+
+*******************************************************************************/
+#include <stdio.h> 
+#include <stdlib.h> 
+#include <string.h>
+//Printing face cards must be above everything
+void printAce(char* suit[]) {
+    if (strcmp(suit[0], "Spades") == 0) {
+        printf("|A .  | \n| /.\\ | \n|(_._)|\n|  |  |\n|_____V|");
+    }
+    else if (strcmp(suit[0], "Clubs") == 0) {
+
+    }
+}
+//these functions will pretty much be the same, just printf being different
+void printJack(char* suit[]) {
+
+}
+
+void printQueen(char* suit[]) {
+
+}
+
+void printKing(char* suit[]) {
+
+}
+
+void printNum(char* suit[], char* value[]) {
+    //Get symbol needed for printing middle of card
+    char symbol[1];
+    if (strcmp(suit[0], "Clubs") == 0) {
+        strcpy(symbol, "&");
+    }
+    else if (strcmp(suit[0], "Diamonds") == 0) {
+        strcpy(symbol, "o");
+    }
+    else if (strcmp(suit[0], "Spades") == 0) {
+        strcpy(symbol, "^");
+    }
+    else if (strcmp(suit[0], "Hearts") == 0) {
+        strcpy(symbol, "v");
+    }
+    else {
+        strcpy(symbol, "f");
+    }
+    //Print based off num using symbol var
+    if (strcmp(value[0], "2") == 0) {
+        printf("_____\n| 2   |\n| ^ |\n|     |\n| ^ |\n|____Z | ");//, symbol, symbol);
+    }
+}
+
+void printMiddle(char *suit[], char *value[]) {
+    if (strcmp(value[0], "Ace") == 0) {
+        printAce(suit);
+    }
+    else if (strcmp(value[0], "Jack") == 0) {
+        printJack(suit);
+    }
+    else if (strcmp(value[0], "Queen") == 0) {
+        printQueen(suit);
+    }
+    else if (strcmp(value[0], "King") == 0) {
+        printKing(suit);
+    }
+    else {
+        printNum(suit, value);
+    }
+
+
+
+}
+
+
+void printCard(char *suit[], char *value[]) {
+    printf("\n _____\n");
+    printMiddle(suit, value);
+
+
+}
+
+//main just for testing
+int main(){
+    printf("_______\n|A _  |\n| ( ) |\n|(_'_)|\n|  |  |\n|____V|\n");
+    printf("Divider");
+    printCard("Spades", "2");
+    return 0;
+}
