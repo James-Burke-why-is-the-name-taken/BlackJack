@@ -1,0 +1,75 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+const char *suits[4] = {"Clubs", "Diamonds", "Spades", "Hearts"};
+
+const char *values[13] = {"Ace", "2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King"};
+
+
+typedef struct Card{
+        int suit;
+        int value;
+        int dealt; // 104 card deck, so if dealt = 2, dont draw it.
+}Card;
+
+typedef struct hand{
+        Card held[10];
+        int amount;
+}hand;
+
+void create(Card deck[]){
+        int s;
+        int v;
+        int i = 0;
+        for (s=0;s<4;s++){
+                for (v=0;v<13;v++){
+                        deck[i].suit = s;
+                        deck[i].value = v;
+                        deck[i].dealt = 0;
+                        i++;
+                }
+        }
+}
+
+int draw(Card deck[]){
+
+        int i;
+        int count = 0;
+        i = rand() % 52;
+        while (deck[i].dealt == 2){
+                i = rand()% 52;
+                count++;
+                if (count == 104){
+                        create(deck);
+                        printf("Deck has been re shuffled.");
+                        }
+                }
+        deck[i].dealt++;
+        return i;
+        }
+
+void print(Card deck[]){
+        int r;
+        r = draw(deck);
+        printf("Card suit: %s Card Value: %s \n", suits[deck[r].suit], values[deck[r].value]);
+        }
+
+void add_to_hand(int num, hand held, Card deck[]){
+        held.held[held.amount] = deck[num];
+        held.amount++;
+        }
+
+int scoring(hand held){
+
+
+int main(){
+
+srand(time(NULL));
+
+Card deck[52];
+
+create(deck);
+
+print(deck);
+}
