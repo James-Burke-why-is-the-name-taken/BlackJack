@@ -1,3 +1,8 @@
+/*
+ * This is a working blackjack loop with a gamelog and check for blackjacks.
+ * What needs to be added: ASCII art for the cards which Jakob is working on, all the code for doubledowns and splits.
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -14,7 +19,7 @@ typedef struct Card{
 }Card;
 
 typedef struct hand{
-        Card held[10];
+        Card held[20];
         int amount;
 }hand;
 
@@ -108,6 +113,14 @@ int main(){
 
 srand(time(NULL));
 
+time_t now;
+
+FILE * f = fopen("BlackjackLog.txt", "a");
+
+time(&now);
+
+fprintf(f, "%s\n", ctime(&now));
+
 int rounds = 0;
 int money = 100;
 int bet;
@@ -134,6 +147,8 @@ while (money > 0){ // this part that does the loop was added after the game was 
 
 rounds++;
 
+fprintf(f, "Round %d is beginning.\n", rounds);
+
 hand player;
 
 player.amount = 0;
@@ -145,14 +160,41 @@ dealer.amount = 0;
 add_to_hand(draw(deck), &player, deck);
 add_to_hand(draw(deck), &player, deck);
 add_to_hand(draw(deck), &dealer, deck);
+add_to_hand(draw(deck), &dealer, deck); // hidden card.
+
 
 printf("Dealer shows: %s of %s\n", values[dealer.held[0].value], suits[dealer.held[0].suit]);
+fprintf(f, "Dealer shows: %s of %s\n", values[dealer.held[0].value], suits[dealer.held[0].suit]);
 
-int pscore;
+fprintf(f, "Player has %s of %s and %s of %s.\n", values[player.held[0].value], suits[player.held[0].suit], values[player.held[1].value], suits[player.held[1].suit]);
 
-int dscore;
+int pscore = scoring(player);
+
+int dscore = scoring(dealer);
 
 char choice;
+
+if (pscore == 21){
+        print_player_hand(player);
+        if (dscore == 21){
+                fprintf(f, "Both player and dealer have Blackjack! It's a tie\n");
+                printf("Both player and dealer have Blackjack! It's a tie\n");
+                }
+        else {
+                printf("Player has blackjack and wins 1.5x the original bet.\n");
+                fprintf(f, "Player has black jack and wins %d dollars.\n", (bet * 1.5));
+                money += (bet * 1.5);
+                }
+        continue;
+        }
+
+if (dscore == 21){
+        printf("Dealer has blackjack.!\n");
+        print_dealer_hand(dealer);
+        fprintf(f, "Dealer has Blackjack, player loses %d dollars.\n", bet);
+        money -= bet;
+        continue;
+        }
 
 while (scoring(player) < 21){
         print_player_hand(player);
@@ -160,7 +202,9 @@ while (scoring(player) < 21){
         scanf(" %c", &choice);
         printf("\n");
         if (choice == 'h'){
-                add_to_hand(draw(deck), &player, deck);
+                int i = draw(deck);
+                add_to_hand(i, &player, deck);
+                fprintf(f, "Player hits and gets %s of %s. New score is: %d\n", values[deck[i].value], suits[deck[i].suit], scoring(player));
                 }
         else {
                 break;
@@ -171,6 +215,7 @@ pscore = scoring(player);
 
 if (pscore > 21){
         printf("Bust, Dealer wins.\n");
+        fprintf(f, "Player Busts with a score of %d, losing %d dollars.\n", pscore, bet);
         money -= bet;
         printf("Loss is %d dollars.\n", bet);
         }
@@ -178,6 +223,8 @@ else { //also added after most of the code was done.
 printf("Dealer's turn.\n");
 while (scoring(dealer) < 17){
         add_to_hand(draw(deck), &dealer, deck);
+        dscore = scoring(dealer);
+        fprintf(f, "Dealers final score: %d\n", dscore);
         }
 print_dealer_hand(dealer);
 dscore = scoring(dealer);
@@ -186,23 +233,27 @@ if (dscore > 21 || pscore > dscore){
         printf("You win!\n");
         money += bet;
         printf("Gain is %d dollars.\n", bet);
+        fprintf(f, "Player wins and gains %d dollars.\n", bet);
         }
 else if (dscore > pscore){
         printf("Dealer wins!\n");
         money -= bet;
         printf("Loss is %d dollars.\n", bet);
+        fprintf(f, "Player loses and loses %d dollars.\n", bet);
         }
 else {
         printf("Tie.\n");
+        fprintf(f, "Tie game.\n");
         }
 } // closes the else
 
 
-        if (money < 0){
-                printf("You have no money!.");
+        if (money <= 0){
+                printf("You have no money!.\n");
                 break;
                 }
         printf("Your money: %d. (p)lay again or (c)ash out?", money);
+        fprintf(f, "Current Money: %d dollars.\n", money);
         scanf(" %c", &choice);
         printf("\n");
         if (choice == 'c'){
@@ -212,6 +263,10 @@ else {
         } // This closes the loop
 
 printf("You walk away with $%d after %d rounds.\n", money, rounds);
+fprintf(f, "Player walked away with $%d after %d rounds.\n", money, rounds);
+fprintf(f, "---------------END OF SESSION-----------------\n");
 
+
+fclose(f);
 
 }
