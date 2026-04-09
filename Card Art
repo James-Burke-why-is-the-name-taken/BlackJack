@@ -8,97 +8,120 @@ _______
 */
 /****************************************************************************
 
-File: cardArt.c
+File: CardArt.c
 
 Author: Jakob Flores
 
 Purpose: Print Cards onto the screen
 
-TODO: Moba doesn't like function calls because of pointer stuff
+TODO: Get rid of main function. It's currently just for testing
 
 *******************************************************************************/
-#include <stdio.h> 
-#include <stdlib.h> 
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-//Printing face cards must be above everything
-void printAce(char* suit[]) {
-    if (strcmp(suit[0], "Spades") == 0) {
-        printf("|A .  | \n| /.\\ | \n|(_._)|\n|  |  |\n|_____V|");
-    }
-    else if (strcmp(suit[0], "Clubs") == 0) {
 
-    }
-}
-//these functions will pretty much be the same, just printf being different
-void printJack(char* suit[]) {
+#define CARD_LINES 8
+#define LINE_WIDTH 12
 
-}
+typedef struct {
+    char* lines[CARD_LINES];
+} Card;
 
-void printQueen(char* suit[]) {
+// Parameters: Full suit word, and the card value
+Card* createCard(char suit[], char value[]) {
+    Card* c = (Card*)malloc(sizeof(Card));
 
-}
-
-void printKing(char* suit[]) {
-
-}
-
-void printNum(char* suit[], char* value[]) {
-    //Get symbol needed for printing middle of card
-    char symbol[1];
-    if (strcmp(suit[0], "Clubs") == 0) {
-        strcpy(symbol, "&");
-    }
-    else if (strcmp(suit[0], "Diamonds") == 0) {
-        strcpy(symbol, "o");
-    }
-    else if (strcmp(suit[0], "Spades") == 0) {
-        strcpy(symbol, "^");
-    }
-    else if (strcmp(suit[0], "Hearts") == 0) {
-        strcpy(symbol, "v");
-    }
-    else {
-        strcpy(symbol, "f");
-    }
-    //Print based off num using symbol var
-    if (strcmp(value[0], "2") == 0) {
-        printf("_____\n| 2   |\n| ^ |\n|     |\n| ^ |\n|____Z | ");//, symbol, symbol);
-    }
-}
-
-void printMiddle(char *suit[], char *value[]) {
-    if (strcmp(value[0], "Ace") == 0) {
-        printAce(suit);
-    }
-    else if (strcmp(value[0], "Jack") == 0) {
-        printJack(suit);
-    }
-    else if (strcmp(value[0], "Queen") == 0) {
-        printQueen(suit);
-    }
-    else if (strcmp(value[0], "King") == 0) {
-        printKing(suit);
-    }
-    else {
-        printNum(suit, value);
+    for (int i = 0; i < CARD_LINES; i++) {
+        c->lines[i] = (char*)malloc(LINE_WIDTH * sizeof(char));
     }
 
+    // 1. Internal Suit Mapping
+    char suitSymbol;
+    if (strcmp(suit, "Spades") == 0)      suitSymbol = '^';
+    else if (strcmp(suit, "Clubs") == 0)  suitSymbol = '&';
+    else if (strcmp(suit, "Hearts") == 0) suitSymbol = 'v';
+    else if (strcmp(suit, "Diamonds") == 0) suitSymbol = 'o';
+    else suitSymbol = '?';
 
+    // 2. Internal Bottom-Rank Mapping (Matching your ASCII art)
+    char botVal[4];
+    if (strcmp(value, "2") == 0)      strcpy(botVal, "Z");
+    else if (strcmp(value, "3") == 0) strcpy(botVal, "E");
+    else if (strcmp(value, "4") == 0) strcpy(botVal, "h");
+    else if (strcmp(value, "5") == 0) strcpy(botVal, "S");
+    else if (strcmp(value, "6") == 0) strcpy(botVal, "9");
+    else if (strcmp(value, "7") == 0) strcpy(botVal, "L");
+    else if (strcmp(value, "8") == 0) strcpy(botVal, "8");
+    else if (strcmp(value, "9") == 0) strcpy(botVal, "6");
+    else if (strcmp(value, "10") == 0) strcpy(botVal, "0I");
+    else if (strcmp(value, "J") == 0)  strcpy(botVal, "[");
+    else if (strcmp(value, "Q") == 0)  strcpy(botVal, "O");
+    else if (strcmp(value, "K") == 0)  strcpy(botVal, ">|");
+    else if (strcmp(value, "A") == 0)  strcpy(botVal, "V");
+    else strcpy(botVal, " ");
 
+    // --- Drawing Logic ---
+    strcpy(c->lines[0], "  _____  ");
+
+    // Top value
+    if (strlen(value) > 1)
+        sprintf(c->lines[1], " |%s   | ", value);
+    else
+        sprintf(c->lines[1], " |%s    | ", value);
+
+    // Suit symbols
+    sprintf(c->lines[2], " |  %c  | ", suitSymbol);
+    strcpy(c->lines[3], " |     | ");
+    sprintf(c->lines[4], " |  %c  | ", suitSymbol);
+    strcpy(c->lines[5], " |     | ");
+    sprintf(c->lines[6], " |  %c  | ", suitSymbol);
+
+    // Bottom value (padding logic)
+    if (strlen(botVal) == 3)      sprintf(c->lines[7], " |__%s| ", botVal);
+    else if (strlen(botVal) == 2) sprintf(c->lines[7], " |___%s| ", botVal);
+    else  sprintf(c->lines[7], " |____%s| ", botVal);
+
+    return c;
 }
 
-
-void printCard(char *suit[], char *value[]) {
-    printf("\n _____\n");
-    printMiddle(suit, value);
-
-
+void printHand(Card* hand[], int count) {
+    for (int i = 0; i < CARD_LINES; i++) {
+        for (int j = 0; j < count; j++) {
+            printf("%s", hand[j]->lines[i]);
+        }
+        printf("\n");
+    }
 }
 
-//main just for testing
-int main(){
-    printf("_______\n|A _  |\n| ( ) |\n|(_'_)|\n|  |  |\n|____V|\n");
-    printf("Divider");
-    printCard("Spades", "2");
+void freeCard(Card* c) {
+    if (c == NULL) return;
+    for (int i = 0; i < CARD_LINES; i++) {
+        free(c->lines[i]);
+    }
+    free(c);
+}
+
+int main() {
+    int totalCards = 0; //This should be in main function and 
+    //it goes up each time a card is created and reset every round
+    Card* myHand[9]; //MAX cards you can have is 9 otherwise you go above 21
+
+    myHand[0] = createCard("Spades", "9");
+    totalCards++;
+    myHand[1] = createCard("Diamonds", "10");
+    totalCards++;
+    myHand[2] = createCard("Clubs", "J");
+    totalCards++;
+    myHand[3] = createCard("Hearts", "A");
+    totalCards++;
+
+    printf("Hand printed via Structs :\n\n");
+    printHand(myHand, totalCards);
+
+    for (int i = 0; i < totalCards; i++) {
+        freeCard(myHand[i]);
+    }
+
     return 0;
 }
