@@ -1,37 +1,565 @@
-#pragma once
+/*
+ * This is a working blackjack loop with a gamelog and check for blackjacks.
+ * What needs to be added: ASCII art for the cards which Jakob is working on, all the code for doubledowns and splits.
+*/
 
-//Values
-static const char* suits[4] = { "Clubs", "Diamonds", "Spades", "Hearts" };
+#include <stdio.h>
+#include <stdlib.h>
+#include "cardFuncStruc.h"
+#include <time.h>
 
-static const char* values[13] = { "Ace", "2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King" };
 
-//Structs
-typedef struct card{
+/*
+void print_dealer_hand(hand held) {
+    printf("Dealer's hand:\n");
+    int i;
+    for (i = 0; i < held.amount; i++) {
+        printf("%s of %s ", values[held.held[i].value], suits[held.held[i].suit]);
+    }
+    printf("Their score: %d\n", scoring(held));
+}
+
+void print_player_hand(hand held) {
+    printf("Your hand:\n");
+    int i;
+    for (i = 0; i < held.amount; i++) {
+        printf("%s of %s ", values[held.held[i].value], suits[held.held[i].suit]);
+    }
+    printf("Your score: %d\n", scoring(held));
+}
+*/
+int main() {
+
+    srand(time(NULL));
+
+    time_t now;
+
+    FILE* f = fopen("BlackjackLog.txt", "a");
+
+    time(&now);
+
+    fprintf(f, "%s\n", ctime(&now));
+
+    int rounds = 0;
+    float money = 100;
+    float bet;
+    printf("WHAT\n");
+    Card deck[52];
+    create(deck);
+
+    printf("Welcome to blackjack. The goal is to get as close as possible to 21 without going over, aces are 1 or 11, faces are 10, dealer stands on 17.\n");
+    printf("To start, you will be given 100$\n");
+
+    while (money > 0) { // this part that does the loop was added after the game was made and im too lazy to indent everything.
+        printf("Current Bank: %.2f\n", money);
+        printf("Enter your bet: ");
+        bet = getInteger();
+        printf("\n");
+
+        if (bet > money || bet <= 0) {
+            printf("Invalid, try again\n");
+            continue;
+        }
+
+
+        int h;
+
+        rounds++;
+
+        fprintf(f, "Round %d is beginning.\n", rounds);
+
+        Hand player[2];
+
+        int active_hands = 1;
+
+        int split_bet = 0;
+
+        player[0].amount = 0;
+        player[1].amount = 0;
+
+        Hand dealer;
+
+        dealer.amount = 0;
+
+        add_to_hand(draw(deck), &player[0], deck);
+        add_to_hand(draw(deck), &player[0], deck);
+        add_to_hand(draw(deck), &dealer, deck);
+        add_to_hand(draw(deck), &dealer, deck); // hidden card.
+
+        printf("Your hand:\n");
+        printHand(player[0], 2);
+        printf("Your score: %d\n", scoring(player[0]));
+
+        //2.0 at end of line below just in case so nothing bugs out
+        if (player[0].held[0].value == player[0].held[1].value && money >= bet * 2.0) {
+            printf("You have a pair! would you like to split (y/n)");
+            char split = getCharacter();            
+
+            if (split == 'y') {
+                active_hands = 2;
+                split_bet = bet;
+                player[1].held[0] = player[0].held[1];
+                player[1].amount = 1;
+                player[0].amount = 1;
+                add_to_hand(draw(deck), &player[0], deck);
+                add_to_hand(draw(deck), &player[1], deck);
+                printf("Hands have been split!\n");
+                fprintf(f, "Player has chosen to split their hands.\n");
+            }
+        }
+
+
+        printf("Dealer shows: %s of %s\n", values[dealer.held[0].value], suits[dealer.held[0].suit]);
+        fprintf(f, "Dealer shows: %s of %s\n", values[dealer.held[0].value], suits[dealer.held[0].suit]);
+
+        fprintf(f, "Player has %s of %s and %s of %s.\n", values[player[0].held[0].value], suits[player[0].held[0].suit], values[player[0].held[1].value], suits[player[0].held[1].suit]);
+
+        int pscore = scoring(player[0]);
+
+        int dscore = scoring(dealer);
+
+        char choice;
+
+        if (pscore == 21) {
+            printHand(player[0], player[0].amount);
+            if (dscore == 21) {
+                fprintf(f, "Both player and dealer have Blackjack! It's a tie\n");
+                printf("Both player and dealer have Blackjack! It's a tie\n");
+            }
+            else {
+                printf("Player has blackjack and wins 1.5x the original bet.\n");
+                fprintf(f, "Player has black jack and wins %d dollars.\n", (int)(bet * 1.5));
+                money += (bet * 1.5);
+            }
+            continue;
+        }
+
+        if (dscore == 21) {
+            printf("Dealer has blackjack.!\n");
+            printHand(dealer, dealer.amount);
+            fprintf(f, "Dealer has Blackjack, player loses %.2f dollars.\n", bet);
+            money -= bet;
+            continue;
+        }
+        for (h = 0; h < active_hands; h++) { // this will loop the entire scoring logic, end will be noted.
+            if (active_hands > 1) {
+                printf("---- Playing hand %d ----\n", h + 1);
+                fprintf(f, "---- Playing hand %d ----\n", h + 1);
+            }
+            while (scoring(player[h]) < 21) {
+                printHand(player[h], player[h].amount);
+                if (player[h].amount == 2 && money >= bet * 2) {
+                    printf("Do you want to hit, stand, or double down? (type h for hit, s for stand, d for double down) ");
+                }
+                else {
+                    printf("Do you want to hit or stand? (type h for hit, s for stand) ");
+                }
+
+                scanf(" %c", &choice);
+                printf("\n");
+                if (choice == 'd' && player[h].amount == 2 && money >= bet * 2) {
+                    bet *= 2;
+                    int i = draw(deck);
+                    add_to_hand(i, &player[h], deck);
+                    printf("You have chosen to double down!\n");
+                    fprintf(f, "Player doubles down! They got %s of %s, Bet is now %.2f. New score is %d.\n", values[deck[i].value], suits[deck[i].suit], bet, scoring(player[h]));
+                    break;
+                }
+                else if (choice == 'h') {
+                    int i = draw(deck);
+                    add_to_hand(i, &player[h], deck);
+                    fprintf(f, "Player hits and gets %s of %s. New score is: %d\n", values[deck[i].value], suits[deck[i].suit], scoring(player[h]));
+                }
+                else {
+                    break;
+                }
+            }
+        } // i think this is the end, i hope it is.
+
+        printf("Dealer's turn.\n");
+        //ig this is just how the dealer plays, I mean it's kinda good
+        while (scoring(dealer) < 17) {
+            add_to_hand(draw(deck), &dealer, deck);
+            dscore = scoring(dealer);
+        }
+
+        for (h = 0; h < active_hands; h++) { // more horseshit
+
+            int pscore = scoring(player[h]);
+
+            printHand(player[h], player[h].amount);
+            printHand(dealer, dealer.amount);
+
+            if (pscore > 21) {
+                printf("Hand %d: Bust, Dealer wins.\n", h + 1);
+                fprintf(f, "Hand %d: Player Busts with a score of %d, losing %2.f dollars.\n", h + 1, pscore, bet);
+                money -= bet;
+                printf("Loss is %.2f dollars.\n", bet);
+            }
+            else { //also added after most of the code was done.
+
+                if (dscore > 21 || pscore > dscore) {
+                    printf("Hand %d: You win!\n", h + 1);
+                    money += bet;
+                    printf("Gain is %.2f dollars.\n", bet);
+                    fprintf(f, "Hand %d: Player wins and gains %.2f dollars.\n", h + 1, bet);
+                }
+                else if (dscore > pscore) {
+                    printf("Hand %d: Dealer wins!\n", h + 1);
+                    money -= bet;
+                    printf("Loss is %.2f dollars.\n", bet);
+                    fprintf(f, "Hand %d: Player loses and loses %.2f dollars.\n", h + 1, bet);
+                }
+                else {
+                    printf("Hand %d: Tie.\n", h + 1);
+                    fprintf(f, "Hand %d: Tie game.\n", h + 1);
+                }
+            } // closes the else
+
+        } // closes horseshitt???????
+        if (money <= 0) {
+            printf("You have no money!.\n");
+            break;
+        }
+        printf("Your money: %.2f. (p)lay again or (c)ash out?", money);
+        fprintf(f, "Current Money: %.2f dollars.\n", money);
+        scanf(" %c", &choice);
+        printf("\n");
+        if (choice == 'c') {
+            break;
+        }
+
+    } // This closes the loop
+
+    printf("You walk away with $%.2f after %d rounds.\n", money, rounds);
+    fprintf(f, "Player walked away with $%.2f after %d rounds.\n", money, rounds);
+    fprintf(f, "---------------END OF SESSION-----------------\n\n");
+
+
+    fclose(f);
+
+}
+/*
+[burkej34@prclab1:~/ project]$^ C
+[burkej34@prclab1:~/ project]$ nano test.c
+[burkej34@prclab1:~/ project]$ cat test.c*/
+/*
+ * This is a working blackjack loop with a gamelog and check for blackjacks.
+ * What needs to be added: ASCII art for the cards which Jakob is working on, all the code for doubledowns and splits.
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+const char* suits[4] = { "Clubs", "Diamonds", "Spades", "Hearts" };
+
+const char* values[13] = { "Ace", "2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King" };
+
+
+typedef struct Card {
     int suit;
     int value;
-    int dealt;
-    char lines[8][12];
-} Card;
+    int dealt; // 104 card deck, so if dealt = 2, dont draw it.
+    char* lines[8];
+}Card;
 
 typedef struct hand {
     Card held[20];
     int amount;
-}Hand;
+}hand;
 
-//Functions
+void create(Card deck[]) {
+    int s;
+    int v;
+    int i = 0;
+    for (s = 0; s < 4; s++) {
+        for (v = 0; v < 13; v++) {
+            deck[i].suit = s;
+            deck[i].value = v;
+            deck[i].dealt = 0;
+            i++;
+        }
+    }
+}
 
-void createCard(Card* c);
+int draw(Card deck[]) {
 
-void create(Card* deck[]);
+    int i;
+    int count = 0;
+    i = rand() % 52;
+    while (deck[i].dealt == 2) {
+        i = rand() % 52;
+        count++;
+        if (count == 104) {
+            create(deck);
+            printf("Deck has been re shuffled.");
+        }
+    }
+    deck[i].dealt++;
+    return i;
+}
 
-void printHand(Hand h, int amount);
+void print(Card deck[]) {
+    int r;
+    r = draw(deck);
+    printf("Card suit: %s Card Value: %s \n", suits[deck[r].suit], values[deck[r].value]);
+}
 
-int draw(Card deck[]);
+void add_to_hand(int num, hand* held, Card deck[]) {
+    held->held[held->amount] = deck[num];
+    held->amount++;
+}
 
-void add_to_hand(int num, Hand* held, Card deck[]);
+int scoring(hand held) {
+    int aces = 0;
+    int total_score = 0;
+    int i;
 
-int scoring(Hand held);
+    for (i = 0; i < held.amount; i++) {
+        int value = held.held[i].value;
 
-char getCharacter();
+        if (value == 0) {
+            total_score += 11;
+            aces++;
+        }
+        else if (value >= 10) {
+            total_score += 10;
+        }
+        else {
+            total_score += (value + 1);
+        }
+    }
+    while (total_score > 21 && aces > 0) {
+        total_score -= 10;
+        aces--;
+    }
+    return total_score;
+}
 
-int getInteger();
+void print_dealer_hand(hand held) {
+    printf("Dealer's hand:\n");
+    int i;
+    for (i = 0; i < held.amount; i++) {
+        printf("%s of %s ", values[held.held[i].value], suits[held.held[i].suit]);
+    }
+    printf("Their score: %d\n", scoring(held));
+}
+
+void print_player_hand(hand held) {
+    printf("Your hand:\n");
+    int i;
+    for (i = 0; i < held.amount; i++) {
+        printf("%s of %s ", values[held.held[i].value], suits[held.held[i].suit]);
+    }
+    printf("Your score: %d\n", scoring(held));
+}
+
+int main() {
+
+    srand(time(NULL));
+
+    time_t now;
+
+    FILE* f = fopen("BlackjackLog.txt", "a");
+
+    time(&now);
+
+    fprintf(f, "%s\n", ctime(&now));
+
+    int rounds = 0;
+    int money = 100;
+    int bet;
+
+    Card deck[52];
+
+    create(deck);
+
+    printf("Welcome to blackjack. The goal is to get as close as possible to 21 without going over, aces are 1 or 11, faces are 10, dealer stands on 17.\n");
+    printf("To start, you will be given 100$\n");
+
+    while (money > 0) { // this part that does the loop was added after the game was made and im too lazy to indent everything.
+        printf("Current Bank: %d\n", money);
+        printf("Enter your bet: ");
+        scanf(" %d", &bet);
+        printf("\n");
+
+        if (bet > money || bet <= 0) {
+            printf("Invalid, try again\n");
+            continue;
+        }
+
+
+        int h;
+
+        rounds++;
+
+        fprintf(f, "Round %d is beginning.\n", rounds);
+
+        hand player[2];
+
+        int active_hands = 1;
+
+        int split_bet = 0;
+
+        player[0].amount = 0;
+        player[1].amount = 0;
+
+        hand dealer;
+
+        dealer.amount = 0;
+
+        add_to_hand(draw(deck), &player[0], deck);
+        add_to_hand(draw(deck), &player[0], deck);
+        add_to_hand(draw(deck), &dealer, deck);
+        add_to_hand(draw(deck), &dealer, deck); // hidden card.
+
+        if (player[0].held[0].value == player[0].held[1].value && money >= bet * 2) {
+            print_player_hand(player[0]);
+            printf("You have a pair! would you like to split (y/n)");
+            char split;
+            scanf(" %c", &split);
+
+            if (split == 'y') {
+                active_hands = 2;
+                split_bet = bet;
+                player[1].held[0] = player[0].held[1];
+                player[1].amount = 1;
+                player[0].amount = 1;
+                add_to_hand(draw(deck), &player[0], deck);
+                add_to_hand(draw(deck), &player[1], deck);
+                printf("Hands have been split!\n");
+                fprintf(f, "Player has chosen to split their hands.\n");
+            }
+        }
+
+
+        printf("Dealer shows: %s of %s\n", values[dealer.held[0].value], suits[dealer.held[0].suit]);
+        fprintf(f, "Dealer shows: %s of %s\n", values[dealer.held[0].value], suits[dealer.held[0].suit]);
+
+        fprintf(f, "Player has %s of %s and %s of %s.\n", values[player[0].held[0].value], suits[player[0].held[0].suit], values[player[0].held[1].value], suits[player[0].held[1].suit]);
+
+        int pscore = scoring(player[0]);
+
+        int dscore = scoring(dealer);
+
+        char choice;
+
+        if (pscore == 21) {
+            print_player_hand(player[0]);
+            if (dscore == 21) {
+                fprintf(f, "Both player and dealer have Blackjack! It's a tie\n");
+                printf("Both player and dealer have Blackjack! It's a tie\n");
+            }
+            else {
+                printf("Player has blackjack and wins 1.5x the original bet.\n");
+                fprintf(f, "Player has black jack and wins %d dollars.\n", (bet * 1.5));
+                money += (bet * 1.5);
+            }
+            continue;
+        }
+
+        if (dscore == 21) {
+            printf("Dealer has blackjack.!\n");
+            print_dealer_hand(dealer);
+            fprintf(f, "Dealer has Blackjack, player loses %d dollars.\n", bet);
+            money -= bet;
+            continue;
+        }
+        for (h = 0; h < active_hands; h++) { // this will loop the entire scoring logic, end will be noted.
+            if (active_hands > 1) {
+                printf("---- Playing hand %d ----\n", h + 1);
+                fprintf(f, "---- Playing hand %d ----\n", h + 1);
+            }
+            while (scoring(player[h]) < 21) {
+                print_player_hand(player[h]);
+                if (player[h].amount == 2 && money >= bet * 2) {
+                    printf("Do you want to hit, stand, or double down? (type h for hit, s for stand, d for double down) ");
+                }
+                else {
+                    printf("Do you want to hit or stand? (type h for hit, s for stand) ");
+                }
+
+                scanf(" %c", &choice);
+                printf("\n");
+                if (choice == 'd' && player[h].amount == 2 && money >= bet * 2) {
+                    bet *= 2;
+                    int i = draw(deck);
+                    add_to_hand(i, &player[h], deck);
+                    printf("You have chosen to double down!\n");
+                    fprintf(f, "Player doubles down! They got %s of %s, Bet is now %d. New score is %d.\n", values[deck[i].value], suits[deck[i].suit], bet, scoring(player[h]));
+                    break;
+                }
+                else if (choice == 'h') {
+                    int i = draw(deck);
+                    add_to_hand(i, &player[h], deck);
+                    fprintf(f, "Player hits and gets %s of %s. New score is: %d\n", values[deck[i].value], suits[deck[i].suit], scoring(player[h]));
+                }
+                else {
+                    break;
+                }
+            }
+        } // i think this is the end, i hope it is.
+
+        printf("Dealer's turn.\n");
+        while (scoring(dealer) < 17) {
+            add_to_hand(draw(deck), &dealer, deck);
+            dscore = scoring(dealer);
+        }
+
+        for (h = 0; h < active_hands; h++) { // more horseshit
+
+            int pscore = scoring(player[h]);
+
+            print_player_hand(player[h]);
+            print_dealer_hand(dealer);
+
+            if (pscore > 21) {
+                printf("Hand %d: Bust, Dealer wins.\n", h + 1);
+                fprintf(f, "Hand %d: Player Busts with a score of %d, losing %d dollars.\n", h + 1, pscore, bet);
+                money -= bet;
+                printf("Loss is %d dollars.\n", bet);
+            }
+            else { //also added after most of the code was done.
+
+                if (dscore > 21 || pscore > dscore) {
+                    printf("Hand %d: You win!\n", h + 1);
+                    money += bet;
+                    printf("Gain is %d dollars.\n", bet);
+                    fprintf(f, "Hand %d: Player wins and gains %d dollars.\n", h + 1, bet);
+                }
+                else if (dscore > pscore) {
+                    printf("Hand %d: Dealer wins!\n", h + 1);
+                    money -= bet;
+                    printf("Loss is %d dollars.\n", bet);
+                    fprintf(f, "Hand %d: Player loses and loses %d dollars.\n", h + 1, bet);
+                }
+                else {
+                    printf("Hand %d: Tie.\n", h + 1);
+                    fprintf(f, "Hand %d: Tie game.\n", h + 1);
+                }
+            } // closes the else
+
+        } // closes horseshitt???????
+        if (money <= 0) {
+            printf("You have no money!.\n");
+            break;
+        }
+        printf("Your money: %d. (p)lay again or (c)ash out?", money);
+        fprintf(f, "Current Money: %d dollars.\n", money);
+        scanf(" %c", &choice);
+        printf("\n");
+        if (choice == 'c') {
+            break;
+        }
+
+    } // This closes the loop
+
+    printf("You walk away with $%d after %d rounds.\n", money, rounds);
+    fprintf(f, "Player walked away with $%d after %d rounds.\n", money, rounds);
+    fprintf(f, "---------------END OF SESSION-----------------\n\n");
+
+
+    fclose(f);
+
+}*/
