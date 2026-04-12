@@ -22,7 +22,7 @@ typedef struct hand {
 
 void createCard(Card* c);
 
-void create(Card* deck[]);
+void create(Card deck[]);
 
 void printHand(Hand h, int amount);
 
