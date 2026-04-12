@@ -1,12 +1,10 @@
 /****************************************************************************
 
-File: CardArt.c
+File: cardDefs.c
 
 Author: Jakob Flores
 
-Purpose: Print Cards onto the screen
-
-TODO: Get rid of main function. It's currently just for testing
+Purpose: Holds all function definitions
 
 Resources: GEMINI, heavy amounts of Google Gemini
 
@@ -70,15 +68,15 @@ void createCard(Card* c) {
 
 }
 
-void create(Card* deck[]) {
+void create(Card deck[]) {
     int s;
     int v;
     int i = 0;
     for (s = 0; s < 4; s++) {
         for (v = 0; v < 13; v++) {
-            deck[i]->suit = s;
-            deck[i]->value = v;
-            deck[i]->dealt = 0;
+            deck[i].suit = s;
+            deck[i].value = v;
+            deck[i].dealt = 0;
             createCard(&deck[i]);
             i++;
         }
@@ -107,7 +105,7 @@ char getCharacter() {
 
 int getInteger() {
     int result;
-    while (scanf(" %d", &result) != 1) {
+    while (scanf("%d", &result) != 1) {
         //Just in case
         int c;
         while ((c= getchar()) != '\n' && c != EOF);
@@ -133,12 +131,6 @@ int draw(Card deck[]) {
     }
     deck[i].dealt++;
     return i;
-}
-
-void print(Card deck[]) {
-    int r;
-    r = draw(deck);
-    printf("Card suit: %s Card Value: %s \n", suits[deck[r].suit], values[deck[r].value]);
 }
 
 void add_to_hand(int num, Hand* held, Card deck[]) {
@@ -171,12 +163,3 @@ int scoring(Hand held) {
     }
     return total_score;
 }
-/* Don't think this is necessary anymore
-void freeCard(Card* c) {
-    if (c == NULL) return;
-    for (int i = 0; i < 8; i++) {
-        free(c->lines[i]);
-    }
-    free(c);
-}
-*/
